@@ -36,12 +36,25 @@ class LightGroup(AsyncCMMixin):
             {"protocol_register": protocol_register, "final_future": self._future}
         )
         self._sender: Optional[NetworkSession] = None
+        self._members: list[Union[Light, WhiteWarmLight, ColorLight, IrLight, HevLight, MultiZoneLight, MatrixLight]] = []
         self._reference: list[str] = []
+
+    @property
+    def reference(self) -> list[str]:
+        """Return the current list of member serials as reference."""
+        return [light.serial for light in self._members]
+
+    @property
+    def endpoints(self) -> list[Endpoint]:
+        """Return all member endpoints."""
+        return [light.endpoint for light in self._members]
 
     async def start(self, **kwargs) -> LightGroup:
         rich.print("LightGroup: start()", kwargs)
         if self._sender is None:
             self._sender = await self._lan_target.make_sender()
+
+        await asyncio.gather(*[self._sender.add_service(service=Services.UDP, **endpoint.as_dict()) for endpoint in self.endpoints])
         return self
 
     async def finish(self, exc_typ=None, exc=None, tb=None):
@@ -49,19 +62,19 @@ class LightGroup(AsyncCMMixin):
         if self._sender is not None:
             await self._lan_target.close_sender(self._sender)
 
-    async def add(self, light: Union[Light, WhiteWarmLight, ColorLight, IrLight, HevLight, MultiZoneLight, MatrixLight]) -> None:
+    async def add(self, light: Union[Light, WhiteWarmLight, ColorLight, IrLight, HevLight, MultiZoneLight, MatrixLight]) -> bool:
         """Add a light to the group."""
-        async with self as group:
-            await group._sender.add_service(service=Services.UDP, **light.endpoint.as_dict())
-            if light.serial not in group._reference:
-                group._reference.append(light.serial)
+        if light not in self._members:
+            self._members.append(light)
 
-    async def remove(self, light: Union[Light, WhiteWarmLight, ColorLight, IrLight, HevLight, MultiZoneLight, MatrixLight]) -> None:
+        return True
+
+
+    async def remove(self, light: Union[Light, WhiteWarmLight, ColorLight, IrLight, HevLight, MultiZoneLight, MatrixLight]) -> bool:
         """Remove a light from the group."""
-        async with self as group:
-            await group._sender.forget(light.serial)
-            if light.serial in group._reference:
-                group._reference.pop(light.serial)
+        if light in self._members:
+            self._members.pop(light)
+        return True
 
     async def __get_group_attr(self, attr, **kwargs) -> Any:
         """Get the same packet from all members of the group."""
@@ -82,11 +95,11 @@ class LightGroup(AsyncCMMixin):
 
             return response
 
-    async def power_on(self, duration: int = 0) -> None:
+    async def power_on(self, duration: int = 0) -> Any:
         """Turn all group members on."""
         return await self.__set_group_attr("light_power", level=65535, duration=duration)
 
-    async def power_off(self, duration: int = 0) -> None:
+    async def power_off(self, duration: int = 0) -> Any:
         """Turn all group members on."""
         return await self.__set_group_attr("light_power", level=0, duration=duration)
 
