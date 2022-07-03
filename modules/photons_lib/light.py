@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, cast, Optional
+from typing import Any, cast, Optional, Union
+import logging
+
+
 
 from photons_app.helpers import Firmware, create_future
 from photons_control.attributes import find_packet
@@ -18,7 +21,8 @@ from photons_transport.targets import LanTarget
 from .models import Endpoint, Hsbk
 from .utils import serial_to_mac_address, stringify
 
-DEFAULT_REQUEST_REFRESH_DELAY = 0.35
+DEFAULT_REQUEST_REFRESH_DELAY = 0.2
+_LOGGER = logging.getLogger(__name__)
 
 
 class Light:
@@ -39,10 +43,7 @@ class Light:
         self._group: Optional[str] = None
         self._location: Optional[str] = None
 
-        self._fetch_lock = asyncio.Lock()
-        self._future: asyncio.Future = create_future(
-            name=f"device::{self.serial}::future", loop=self._loop
-        )
+        self._future: asyncio.Future = create_future(loop=self._loop)
         self._lan_target: LanTarget = LanTarget.create(
             {"protocol_register": protocol_register, "final_future": self._future}
         )
@@ -77,7 +78,11 @@ class Light:
             "hsbk": stringify(self._hsbk.as_dict()),
             "product": stringify(self.product.as_dict(), ["cap"]),
             "firmware": stringify(self.firmware.as_dict()),
-            "capabilities": [str(key).removeprefix("has_") for key, val in self.cap.as_dict().items() if val is True]
+            "capabilities": [
+                str(key).removeprefix("has_")
+                for key, val in self.cap.as_dict().items()
+                if val is True
+            ],
         }
         return a_dict
 
@@ -195,15 +200,13 @@ class Light:
 
     async def power_on(self, **kwargs) -> None:
         """Turn the light on."""
-        transform = kwargs.copy()
-        transform["power"] = "on"
-        await self.transform(transform=transform)
+        duration = kwargs.pop("duration", 0)
+        await self.__set_attr("light_power", level=65535, duration=duration)
 
     async def power_off(self, **kwargs) -> None:
         """Turn the light off."""
-        transform = kwargs.copy()
-        transform["power"] = "off"
-        await self.transform(transform=transform)
+        duration = kwargs.pop("duration", 0)
+        await self.__set_attr("light_power", level=0, duration=duration)
 
     async def reboot(self) -> None:
         """Send a magic reboot packet."""
@@ -224,7 +227,7 @@ class Light:
             self.get_cap,
             self.get_mac_address,
             self.get_group,
-            self.get_location
+            self.get_location,
         ]:
             task = asyncio.create_task(func())
             tasks.add(task)
@@ -232,9 +235,6 @@ class Light:
             await task
 
         return self
-
-
-
 
     async def get_state(self) -> Hsbk:
         """Send a GetColor packet and return the LightState response."""
@@ -281,7 +281,11 @@ class Light:
         return serial_to_mac_address(self.serial, self.firmware)
 
     async def __get_attr(self, attr, **kwargs) -> None:
-        """Send a message to the device."""
+        """Send a Get message to the device and return the State response."""
+
+        def log_errors(e):
+            """Log any errors that occur when sending messages."""
+            _LOGGER.debug("__get_attr error: %s", e)
 
         sender: NetworkSession
         async with self._lan_target.session() as sender:
@@ -290,12 +294,35 @@ class Light:
             kls = find_packet(protocol_register=protocol_register, value=attr, prefix="Get")
             msg = kls.create(ack_required=False, res_required=True)
 
-            async for pkt in sender(msg, self.serial):
+            async for pkt in sender(msg, self.serial, error_catcher=log_errors):
                 return {
                     key: value
                     for key, value in pkt.payload.items()
                     if str(key).startswith("reserved") is False
                 }
+
+    async def set_color(self, color: Hsbk, duration: int = 0) -> Hsbk:
+        """Send new HSBK values to device with duration of transition."""
+        return await self.__set_attr("color", duration=duration, **color)
+
+    async def __set_attr(self, attr, **kwargs) -> Any:
+        """Send a Set message to the device, return the current State."""
+
+        def log_errors(e):
+            """Log any errors that occur when sending messages."""
+            _LOGGER.debug("__set_attr error: %s", e)
+
+        sender: NetworkSession
+        async with self._lan_target.session() as sender:
+            await sender.add_service(service=Services.UDP, **self._endpoint.as_dict())
+
+            set_kls = find_packet(protocol_register=protocol_register, value=attr, prefix="Set")
+            set_msg = set_kls.create(ack_required=True, res_required=False, **kwargs)
+
+            await sender(set_msg, self.serial, error_catcher=log_errors)
+            await asyncio.sleep(DEFAULT_REQUEST_REFRESH_DELAY)
+
+            return await self.__get_attr(attr, **kwargs)
 
 
 class WhiteWarmLight(Light):
@@ -358,6 +385,7 @@ class MatrixLight(ColorLight):
         a_dict = super().as_dict()
         a_dict["zones"] = str(self.cap.zones.name).capitalize()
         return a_dict
+
 
 async def create_light(
     endpoint: Endpoint,
