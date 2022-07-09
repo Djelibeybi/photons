@@ -33,6 +33,8 @@ tests = [
     "noseOfYeti[black]==2.4.1",
     "pytest-helpers-namespace==2021.12.29",
     "pytest==7.2.0",
+    "aiohttp==3.7.4",
+    "typing-extensions==4.4.0",
 ]
 
 [project.scripts]

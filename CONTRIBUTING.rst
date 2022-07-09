@@ -150,9 +150,8 @@ Photons can create these in two ways.
 
 The first way is using the standard library ``asynccontextmanager`` decorator.
 Photons makes this available via ``photons_app.helpers`` to make it easier to
-sync with public photons until the minimum version of Python supported by it is
-Python3.7 as Python3.6 does not include that function in the standard library and
-public photons must polyfill it.
+sync with public photons before the minimum version of Python supported was greater
+than python3.7 as Python3.6 did not include that function in the standard library.
 
 .. code-block:: python
 

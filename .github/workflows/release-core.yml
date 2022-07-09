@@ -13,7 +13,7 @@ jobs:
 
       - uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: "3.10"
 
       - id: build
         run: cd apps/arranger && pip install hatch==1.6.3 && hatch build

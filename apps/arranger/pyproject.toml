@@ -18,9 +18,7 @@ keywords = [
     "photons",
 ]
 dependencies = [
-    "lifx-photons-core>=0.42.2",
-    "tornado>=5.1.1",
-    "whirlwind-web>=0.11.0",
+    "lifx-photons-core[web_server]>=0.43.0",
 ]
 
 [project.entry-points."lifx.photons"]

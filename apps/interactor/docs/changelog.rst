@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-13-0:
+
+0.13.0 - TBD
+    * Now Python 3.10+
+
 .. _release-interactor-0-12-5:
 
 0.12.5 - 20 November 2022

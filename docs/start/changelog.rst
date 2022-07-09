@@ -3,11 +3,12 @@
 ChangeLog
 =========
 
-.. _release-core-0-42.8:
+.. _release-core-0-43.0:
 
-0.42.8 - TBD
+0.43.0 - TBD
     * Replace ruamel.yaml with the ruyaml fork
     * Convert from setuptools to hatchling
+    * Now Python3.10+
 
 .. _release-core-0-42.7:
 
