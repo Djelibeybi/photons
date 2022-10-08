@@ -62,7 +62,7 @@ class TMessageFromExc(tp.Protocol):
         lc: LogContext,
         logger_name: str,
         log_exceptions=True,
-        see_exception: tp.Optional[ExceptionSeer] = None,
+        see_exception: ExceptionSeer | None = None,
     ):
         ...
 
@@ -77,7 +77,7 @@ class MessageFromExc:
         lc: LogContext,
         logger_name: str,
         log_exceptions=True,
-        see_exception: tp.Optional[ExceptionSeer] = None,
+        see_exception: ExceptionSeer | None = None,
     ):
         self.lc = lc
         self.see_exception = see_exception
@@ -108,7 +108,7 @@ class MessageFromExc:
     __call__ = process
 
 
-def get_logger_name(stack_level: int = 0, method: tp.Optional[types.MethodType] = None) -> str:
+def get_logger_name(stack_level: int = 0, method: tp.Callable | None = None) -> str:
     mod = None
     if method is None:
         try:
@@ -130,9 +130,7 @@ def get_logger_name(stack_level: int = 0, method: tp.Optional[types.MethodType] 
         return "photons_web_server.command.messages"
 
 
-def get_logger(
-    stack_level: int = 0, method: tp.Optional[types.MethodType] = None
-) -> logging.Logger:
+def get_logger(stack_level: int = 0, method: tp.Callable | None = None) -> logging.Logger:
     return logging.getLogger(get_logger_name(stack_level + 1, method))
 
 
