@@ -113,7 +113,9 @@ class MessageFromExc:
 
         elif exc and exc_type:
             if self.see_exception is None and self.log_exceptions:
-                self.log.error(self.lc(str(exc)), exc_info=(exc_type, exc, tb))
+                self.log.error(
+                    self.lc(f"{type(exc).__name__}: {str(exc)}"), exc_info=(exc_type, exc, tb)
+                )
 
         return ErrorMessage(
             status=500, error="Internal Server Error", error_code="InternalServerError"
@@ -152,7 +154,7 @@ class TProgressMessageMaker(tp.Protocol):
     def __init__(self, *, lc: LogContext, logger_name: str):
         ...
 
-    def __call__(self, body: tp.Any, message: tp.Any, do_log=True, **kwargs) -> dict:
+    async def __call__(self, message: tp.Any, do_log=True, **kwargs) -> dict:
         ...
 
 
@@ -162,13 +164,13 @@ class ProgressMessageMaker:
         self.logger_name = logger_name
         self.log = logging.getLogger(self.logger_name)
 
-    def __call__(self, body: tp.Any, message: tp.Any, do_log=True, **kwargs) -> dict:
-        info = self.make_info(body, message, **kwargs)
+    async def __call__(self, message: tp.Any, do_log=True, **kwargs) -> dict:
+        info = await self.make_info(message, **kwargs)
         if do_log:
-            self.do_log(body, message, info, **kwargs)
+            await self.do_log(message, info, **kwargs)
         return info
 
-    def make_info(self, body: tp.Any, message: tp.Any, **kwargs) -> dict:
+    async def make_info(self, message: tp.Any, **kwargs) -> dict:
         info: dict[str, object] = {}
 
         if isinstance(message, Exception):
@@ -189,7 +191,7 @@ class ProgressMessageMaker:
         info.update(kwargs)
         return info
 
-    def do_log(self, body: tp.Any, message: tp.Any, info: object, **kwargs) -> None:
+    async def do_log(self, message: tp.Any, info: object, **kwargs) -> None:
         if isinstance(info, dict):
             if "error" in info:
                 self.log.error(self.lc("progress", **info))
