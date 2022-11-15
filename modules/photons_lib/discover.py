@@ -1,22 +1,20 @@
 """Discovery of LIFX lights."""
 from __future__ import annotations
-from typing import Union, AsyncGenerator
-import rich
 
 import asyncio
-from ipaddress import IPv4Address
 import logging
-
+from ipaddress import IPv4Address
+from typing import AsyncGenerator, Union
 
 from photons_app import helpers as hp
 from photons_control.device_finder import DeviceFinder, Filter
-from photons_messages import protocol_register, Services
-from photons_messages.messages import DiscoveryMessages, LightMessages, CoreMessages
+from photons_messages import Services, protocol_register
+from photons_messages.messages import CoreMessages, DiscoveryMessages, LightMessages
 from photons_transport.session.network import NetworkSession
 from photons_transport.targets import LanTarget
 
+from .light import HevLight, IrLight, Light, MatrixLight, MultiZoneLight, create_light
 from .models import Endpoint
-from .light import Light, HevLight, IrLight, MatrixLight, MultiZoneLight, create_light
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +33,9 @@ class Discover:
     async def endpoints(self, broadcast: IPv4Address) -> AsyncGenerator[Endpoint]:
         """Find LIFX endpoints using the broadcast address provided."""
         async with self._target.session() as sender:
-            async for pkt in sender(DiscoveryMessages.GetService(), broadcast=str(broadcast)):
+            async for pkt in sender(
+                DiscoveryMessages.GetService(), broadcast=str(broadcast)
+            ):
                 if pkt | DiscoveryMessages.StateService and pkt.payload.service == Services.UDP:
                     yield Endpoint(pkt.serial, *(pkt.Information.remote_addr))
 
