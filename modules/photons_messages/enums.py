@@ -78,3 +78,10 @@ class TileEffectType(Enum):
     MORPH = 2
     FLAME = 3
     RESERVED2 = 4
+    SKY = 5
+
+
+class TileEffectSkyType(Enum):
+    SUNRISE = 0
+    SUNSET = 1
+    CLOUDS = 178
