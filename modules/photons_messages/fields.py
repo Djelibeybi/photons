@@ -9,16 +9,15 @@ from photons_protocol.packets import dictobj
 
 def tile_effect_parameters_for(typ):
     if typ is enums.TileEffectType.SKY:
-        yield ("parameter1", T.Reserved(64))
         yield (
             "skyType",
             T.Uint8.enum(enums.TileEffectSkyType).default(enums.TileEffectSkyType.CLOUDS),
         )
-        yield ("parameter3", T.Reserved(24))
-        yield ("cloudSaturationMin", T.Uint8.default(50))
+        yield ("parameter2", T.Reserved(24))
+        yield ("cloudSaturationMin", T.Uint8.default(51))
         yield ("parameter4", T.Reserved(24))
-        yield ("cloudSaturationMax", T.Uint8.default(180))
-        yield ("parameter5", T.Reserved(184))
+        yield ("cloudSaturationMax", T.Uint8.default(178))
+        yield ("parameter6", T.Reserved(184))
     else:
         for i in range(8):
             yield ("parameter{0}".format(i), T.Reserved(32))
