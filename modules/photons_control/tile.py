@@ -20,10 +20,7 @@ default_tile_palette = [
     for hue in [0, 40, 60, 122, 239, 271, 294]
 ]
 
-default_sky_palette = [
-    {"hue": hue, "brightness": 1, "saturation": 1, "kelvin": 3500}
-    for hue in [0, 36, 60, 120, 250, 280]
-]
+default_sky_palette = []
 
 
 def tiles_from(state_pkt):
@@ -109,7 +106,7 @@ def SetTileEffect(effect, power_on=True, power_on_duration=1, reference=None, **
         if "cloudSaturationMax" not in options:
             options["cloudSaturationMax"] = 180
         if "palette" not in options:
-            options["palette"] = []
+            options["palette"] = default_sky_palette
 
     if "palette" not in options:
         options["palette"] = default_tile_palette
