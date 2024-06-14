@@ -72,6 +72,22 @@ class MultiZoneExtendedApplicationRequest(Enum):
     APPLY_ONLY = 2
 
 
+class TileEffectSkyPalette(Enum):
+    CLOUDS_SKY = 0
+    NIGHT_SKY = 1
+    DAWN_SKY = 2
+    DAWN_SUN = 3
+    FULL_SUN = 4
+    FINAL_SUN = 5
+    NUM_COLOURS = 6
+
+
+class TileEffectSkyType(Enum):
+    SUNRISE = 0
+    SUNSET = 1
+    CLOUDS = 2
+
+
 class TileEffectType(Enum):
     OFF = 0
     RESERVED1 = 1
@@ -79,9 +95,3 @@ class TileEffectType(Enum):
     FLAME = 3
     RESERVED2 = 4
     SKY = 5
-
-
-class TileEffectSkyType(Enum):
-    SUNRISE = 0
-    SUNSET = 1
-    CLOUDS = 178
